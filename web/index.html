@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>射频切换矩阵 · 探测串审计</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    font-family: "SF Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+    background: #0d1117; color: #c9d1d9; line-height: 1.55;
+  }
+  header { max-width: 960px; margin: 0 auto 16px; }
+  h1 { font-size: 20px; color: #58a6ff; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: #8b949e; margin: 18px 0 8px; }
+  h3 { font-size: 13px; color: #8b949e; margin: 16px 0 6px; }
+  header p { color: #8b949e; font-size: 13px; margin: 0; }
+  main { max-width: 960px; margin: 0 auto; }
+  .panel {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 16px 20px; margin-bottom: 16px;
+  }
+  input[type="text"], td input {
+    width: 100%; background: #0d1117; color: #c9d1d9;
+    border: 1px solid #30363d; border-radius: 6px; padding: 6px 10px;
+    font: inherit;
+  }
+  input:focus { outline: 1px solid #58a6ff; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #30363d; padding: 6px 8px; font-size: 13px; text-align: left; }
+  th { color: #8b949e; background: #0d1117; }
+  button {
+    background: #21262d; color: #c9d1d9; border: 1px solid #30363d;
+    border-radius: 6px; padding: 6px 14px; font: inherit; cursor: pointer;
+  }
+  button:hover { border-color: #8b949e; }
+  button.primary {
+    background: #238636; border-color: #2ea043; color: #fff;
+    font-size: 15px; padding: 8px 28px; margin-top: 14px;
+  }
+  button.primary:disabled { opacity: .5; cursor: wait; }
+  button.del { padding: 2px 8px; color: #f85149; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .busy { color: #d29922; margin-left: 12px; }
+  .errors { border-color: #f85149; }
+  .errors h2 { color: #f85149; }
+  .errors li { color: #ffa198; font-size: 13px; }
+  .ok { color: #3fb950; }
+  .bad { color: #f85149; }
+  .muted { color: #8b949e; }
+  .seq { font-size: 16px; }
+  code.code {
+    background: #0d1117; border: 1px solid #30363d; border-radius: 4px;
+    padding: 1px 7px; color: #79c0ff;
+  }
+  .arrow { color: #8b949e; margin: 0 6px; }
+  .chip {
+    display: inline-block; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 10px; padding: 0 8px; margin: 1px 2px; font-size: 12px;
+  }
+  .chip.pair { border-color: #d29922; color: #d29922; }
+</style>
+</head>
+<body>
+<header>
+  <h1>射频切换矩阵 · 探测串审计</h1>
+  <p>控制器上电后可能停在任意内部位置，现场只能发送同一串探测码并读取回执。
+     录入位置、探测码与确定回执，审计是否存在能唯一识别起始位置的规范探测串。</p>
+</header>
+<main>
+  <section class="panel">
+    <h2>① 位置（至多 10 个，逗号或空白分隔）</h2>
+    <input id="positions" type="text" placeholder="例如：A,B,C" autocomplete="off">
+    <h2>② 探测码（2–4 个可打印 ASCII 字符）</h2>
+    <input id="codes" type="text" placeholder="例如：ab" autocomplete="off">
+    <h2>③ 转移与回执（每个位置 × 每个探测码 须恰有一条确定定义）</h2>
+    <table>
+      <thead><tr><th>位置</th><th>探测码</th><th>回执</th><th>下一位置</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="toolbar">
+      <button id="addRow" type="button">＋ 添加转移行</button>
+      <button id="fillGrid" type="button">按位置×码补齐空行</button>
+      <button id="demoDist" type="button">载入可区分示例</button>
+      <button id="demoEq" type="button">载入等价反例</button>
+      <button id="clearAll" type="button">清空</button>
+    </div>
+    <button id="audit" type="button" class="primary">审 计</button>
+    <span id="busy" class="busy" hidden>审计中…</span>
+  </section>
+
+  <section id="errorPanel" class="panel errors" hidden>
+    <h2>输入问题（共 <span id="errCount"></span> 项，已合并显示）</h2>
+    <ul id="errors"></ul>
+  </section>
+
+  <section id="resultPanel" class="panel" hidden>
+    <h2>审计结论</h2>
+    <div id="result"></div>
+  </section>
+</main>
+<datalist id="posList"></datalist>
+<datalist id="codeList"></datalist>
+<script src="app.js"></script>
+</body>
+</html>
